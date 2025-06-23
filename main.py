@@ -10,7 +10,9 @@ import time
 
 class TcUpload:
 
-    def __init__(self, url, max_parallel=3):
+    DEF_PARALLEL = 3
+
+    def __init__(self, url, max_parallel):
         self.uploaders = []
         self.max_parallel = max_parallel
 
@@ -147,6 +149,12 @@ def parse_args(args):
                    nargs='?',
                    default='',
                    help='HTTP bearer token for Trustify API (optional)')
+    p.add_argument('-p', '--max-parallel',
+                   type=int,
+                   default=TcUpload.DEF_PARALLEL,
+                   help=('Limit of parallel uploads'
+                         ' performed at the same time'
+                         ' (default: {})'.format(TcUpload.DEF_PARALLEL)))
     return p.parse_args(args)
 
 
@@ -161,10 +169,14 @@ if __name__ == '__main__':
         path = args.source_dir
         url = args.target_url
         token = args.token
+        max_p = args.max_parallel
     else:
         path = input("Please enter the path to upload your SBOM or CSAF files from: ")  # Enter the files' path
         url = input("Please enter the server URL to upload the files to: ")   # Enter the remote server URL to upload files
         token = input("Please enter the bearer token: ")  # Enter the bearer token of Trustification api server
+        max_p = input("Please enter max parallel count [{}]: "
+                      .format(TcUpload.DEF_PARALLEL))
+        max_p = int(max_p if len(max_p) else TcUpload.DEF_PARALLEL)
 
-    TcUpload(url).upload_dir(path, token)
+    TcUpload(url, max_p).upload_dir(path, token)
 
