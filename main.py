@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-import cmd
+
+import argparse
 import os
 import random
 import subprocess
@@ -7,7 +8,7 @@ import sys
 import time
 
 
-class TcUpload(cmd.Cmd):
+class TcUpload:
 
     def __init__(self, url, max_parallel=3):
         self.uploaders = []
@@ -97,14 +98,14 @@ class TcUpload(cmd.Cmd):
                 stderr=subprocess.PIPE))
 
     def wait_for_parallel(self, for_all=False):
+        # wait for all or some uploads to finish
         needed_max_count = 0 if for_all else (self.max_parallel - 1)
-        # wait for uploads to finish
         while len(self.uploaders) > needed_max_count:
             time.sleep(0.05)
-            # TODO: pop those which exited
+            # process any finished or failed uploads
             for uploader in self.uploaders:
                 if uploader.poll() is not None:
-                    # uploader returncode polling is non
+                    # uploader with return code is already finished
                     self.cnt_total += 1
                     if uploader.returncode != 0:
                         self.cnt_failed += 1
@@ -135,21 +136,31 @@ class TcUpload(cmd.Cmd):
         #        print('Error: The file you are trying to upload called ' + "'" + bad_files + "'" + ' is not of .json type. Please upload only .json files')
         #        i += 1
 
+def parse_args(args):
+    p = argparse.ArgumentParser()
+    p.add_argument('source_dir',
+                   help='Source directory with (sbom/csaf) json files')
+    p.add_argument('target_url',
+                   help='Upload URL of Trustify API'
+                   ' (with /api/v2/sbom or csaf)')
+    p.add_argument('token',
+                   nargs='?',
+                   default='',
+                   help='HTTP bearer token for Trustify API (optional)')
+    return p.parse_args(args)
+
 
 if __name__ == '__main__':
 
     print("***Welcome to Trustification file uploader tool!***")
     if len(sys.argv) >= 2:
-        if '--help' in sys.argv or len(sys.argv) < 3:
-            print('{bin} <src/dir> <http_dest_url> [token]'
-                  .format(bin=sys.argv[0]))
-            sys.exit(0)
-        path = sys.argv[1]
-        url = sys.argv[2]
-        try:
-            token = sys.argv[3]
-        except IndexError:
-            token = ''
+        args = parse_args(sys.argv[1:])
+
+        print(args)
+
+        path = args.source_dir
+        url = args.target_url
+        token = args.token
     else:
         path = input("Please enter the path to upload your SBOM or CSAF files from: ")  # Enter the files' path
         url = input("Please enter the server URL to upload the files to: ")   # Enter the remote server URL to upload files
