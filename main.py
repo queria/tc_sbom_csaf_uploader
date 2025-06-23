@@ -12,9 +12,10 @@ class TcUpload:
 
     DEF_PARALLEL = 3
 
-    def __init__(self, url, max_parallel):
+    def __init__(self, url, max_parallel, auth):
         self.uploaders = []
         self.max_parallel = max_parallel
+        self.auth = auth
 
         self.cmd_base = ['curl',
                          '-X', 'POST',
@@ -28,7 +29,7 @@ class TcUpload:
         self.cnt_total = 0
         self.cnt_failed = 0
 
-    def upload_dir(self, path, token):
+    def upload_dir(self, path):
         folders = [path]
 
         print('Going to upload {} with {} threads'.format(
@@ -46,7 +47,7 @@ class TcUpload:
                     if dentry.is_dir():
                         folders.append(dentry)
                     elif dentry.is_file():
-                        self.curl_or_wait(dentry.path, token)
+                        self.curl_or_wait(dentry.path)
                         debug_cnt -= 1
                         if debug_cnt == 0:
                             raise DebugExc()
@@ -72,14 +73,14 @@ class TcUpload:
             total=self.cnt_total,
             failed=self.cnt_failed))
 
-    def curl_or_wait(self, jsonfile, token):
+    def curl_or_wait(self, jsonfile):
         cmd = self.cmd_base[:]
 
-        if token:
+        if self.auth:
             # token is added to cmd here, as ideally it should be obtained/refreshed
             # just here before upload
             cmd.append('--header')
-            cmd.append('Authorization: Bearer {t}'.format(t=token))
+            cmd.append('Authorization: Bearer {t}'.format(t=self.auth))
 
         cmd.append('--upload-file')
         cmd.append(jsonfile)
@@ -116,27 +117,6 @@ class TcUpload:
                         print(uploader.stderr.read())
                     self.uploaders.remove(uploader)
 
-
-
-        #print("Starting upload...")
-        #for i in range(file_count):
-        #    all_url = url + suffix
-        #    if (files_in_folder[i].endswith('.json')) or (files_in_folder[i].endswith('.bz2')):
-        #        command = 'curl -X POST' \
-        #                  + ' --location ' + str(all_url) \
-        #                  + ' -k --header ' \
-        #                  + "'Authorization: Bearer " + str(token) + "'" \
-        #                  + ' --upload-file ' + '"{' + str(path + files_in_folder[i]) + '}"' \
-        #                  + ' --header ' + "'Content-Type: application/json" + "'"\
-        #                  + ' --header ' + "'Accept: application/json" + "'"
-        #        subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        #        output = subprocess.check_output(['bash', '-c', command])
-        #        print(output)
-        #        i += 1
-        #    else:
-        #        bad_files = str(files_in_folder[i])
-        #        print('Error: The file you are trying to upload called ' + "'" + bad_files + "'" + ' is not of .json type. Please upload only .json files')
-        #        i += 1
 
 def parse_args(args):
     p = argparse.ArgumentParser()
@@ -178,5 +158,5 @@ if __name__ == '__main__':
                       .format(TcUpload.DEF_PARALLEL))
         max_p = int(max_p if len(max_p) else TcUpload.DEF_PARALLEL)
 
-    TcUpload(url, max_p).upload_dir(path, token)
+    TcUpload(url, max_p, token).upload_dir(path)
 
