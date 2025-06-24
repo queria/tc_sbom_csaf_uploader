@@ -3,6 +3,7 @@
 import argparse
 import os
 import random
+import shlex
 import subprocess
 import sys
 import time
@@ -116,7 +117,8 @@ class TcUpload:
                     if uploader.returncode != 0:
                         self.cnt_failed += 1
                         # curl failed print errors:
-                        print(' '.join(uploader.args))
+                        print('') # terminate inline status update
+                        print(shlex.join(uploader.args))
                         print(uploader.stderr.read())
                     self.uploaders.remove(uploader)
 
