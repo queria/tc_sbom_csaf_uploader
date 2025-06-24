@@ -30,8 +30,6 @@ class TcUpload:
         self.cnt_failed = 0
 
     def upload_dir(self, path):
-        folders = [path]
-
         print('Going to upload {} with {} threads'.format(
             path, self.max_parallel))
 
@@ -42,15 +40,11 @@ class TcUpload:
                 super().__init__('Debug exit')
 
         try:
-            for d in folders:
-                for dentry in os.scandir(d):
-                    if dentry.is_dir():
-                        folders.append(dentry)
-                    elif dentry.is_file():
-                        self.curl_or_wait(dentry.path)
-                        debug_cnt -= 1
-                        if debug_cnt == 0:
-                            raise DebugExc()
+            for file_path in self.find_files(path):
+                self.curl_or_wait(file_path)
+                debug_cnt -= 1
+                if debug_cnt == 0:
+                    raise DebugExc()
         except DebugExc as e:
             self.finalize()
             print(e)
@@ -66,6 +60,15 @@ class TcUpload:
             raise
 
         sys.exit(int(self.cnt_failed > 0))
+
+    def find_files(self, path):
+        folders = [path]
+        for d in folders:
+            for dentry in os.scandir(d):
+                if dentry.is_dir():
+                    folders.append(dentry)
+                elif dentry.is_file():
+                    yield dentry.path
 
     def finalize(self):
         self.wait_for_parallel(for_all=True)
