@@ -27,6 +27,7 @@ class TcUpload:
                          url,
                         ]
 
+        self.cnt_expected = 0
         self.cnt_total = 0
         self.cnt_failed = 0
 
@@ -94,15 +95,29 @@ class TcUpload:
 
         self.wait_for_parallel()
 
-        # print(cmd)
-        print('\rUploaded {}'.format(self.cnt_total), end='', flush=True)
-
         self.uploaders.append(
             subprocess.Popen(
                 cmd,
                 text=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE))
+
+        self.print_progress()
+
+    def print_progress(self):
+        if self.cnt_expected != 0:
+            print(
+                '\rUploading file {} from {}'.format(
+                    self.cnt_total,
+                    self.cnt_expected),
+                end='',
+                flush=True)
+        else:
+            print(
+                '\rUploading file {}'.format(
+                    self.cnt_total),
+                end='',
+                flush=True)
 
     def wait_for_parallel(self, for_all=False):
         # wait for all or some uploads to finish
