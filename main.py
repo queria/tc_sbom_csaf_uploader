@@ -31,9 +31,12 @@ class TcUpload:
         self.cnt_total = 0
         self.cnt_failed = 0
 
-    def upload_dir(self, path):
+    def upload_dir(self, path, scan_first):
         print('Going to upload {} with {} threads'.format(
             path, self.max_parallel))
+
+        for file_path in self.find_files(path):
+            self.cnt_expected += 1
 
         # FIXME: safety counter, abort after this many uploads (0 == disabled)
         debug_cnt = 0
@@ -155,6 +158,11 @@ def parse_args(args):
                    help=('Limit of parallel uploads'
                          ' performed at the same time'
                          ' (default: {})'.format(TcUpload.DEF_PARALLEL)))
+    p.add_argument('-s', '--scan-first',
+                   action='store_true',
+                   default=False,
+                   help='Count files before uploading'
+                   ' (slower but provides status and estimation)')
     return p.parse_args(args)
 
 
@@ -170,6 +178,7 @@ if __name__ == '__main__':
         url = args.target_url
         token = args.token
         max_p = args.max_parallel
+        scan_first = args.scan_first
     else:
         path = input("Please enter the path to upload your SBOM or CSAF files from: ")  # Enter the files' path
         url = input("Please enter the server URL to upload the files to: ")   # Enter the remote server URL to upload files
@@ -177,6 +186,7 @@ if __name__ == '__main__':
         max_p = input("Please enter max parallel count [{}]: "
                       .format(TcUpload.DEF_PARALLEL))
         max_p = int(max_p if len(max_p) else TcUpload.DEF_PARALLEL)
+        scan_first = False
 
-    TcUpload(url, max_p, token).upload_dir(path)
+    TcUpload(url, max_p, token).upload_dir(path, scan_first)
 
