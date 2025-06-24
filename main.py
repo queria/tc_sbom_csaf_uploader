@@ -27,6 +27,7 @@ class TcUpload:
                          url,
                         ]
 
+        self.time_start = None
         self.cnt_expected = 0
         self.cnt_total = 0
         self.cnt_failed = 0
@@ -110,9 +111,10 @@ class TcUpload:
     def print_progress(self):
         if self.cnt_expected != 0:
             print(
-                '\rUploading file {} from {}'.format(
+                '\rUploading file {} from {} [ETA: {}]     '.format(
                     self.cnt_total,
-                    self.cnt_expected),
+                    self.cnt_expected,
+                    self.estimate_time()),
                 end='',
                 flush=True)
         else:
@@ -121,6 +123,28 @@ class TcUpload:
                     self.cnt_total),
                 end='',
                 flush=True)
+
+    def estimate_time(self):
+        if self.time_start is None:
+            self.time_start = time.perf_counter()
+            return '??'
+        else:
+            elapsed_sec = time.perf_counter() - self.time_start
+            file_per_sec = self.cnt_total / elapsed_sec
+
+            remaining_files = self.cnt_expected - self.cnt_total
+            eta_sec = remaining_files / file_per_sec
+
+            # format hours extra as those are optional
+            # only minutes and seconds are shown always
+            h_s = ''
+            if eta_sec > 3600:
+                h_s = '{:02d}h '.format(int(eta_sec / 3600))
+                eta_sec = eta_sec % 3600
+
+            m = int(eta_sec / 60)
+            s = int(eta_sec % 60)
+            return '{}{:02d}m {:02d}s'.format(h_s, m, s)
 
     def wait_for_parallel(self, for_all=False):
         # wait for all or some uploads to finish
